@@ -59,8 +59,9 @@
 
 (defn- make-ns-pfns!
   [sinks [subscribe ns-sym tags
-          {:keys [public private level suppress-results?]
-           :or   {public true, private false, level 0}}]]
+          {:keys [public private level transforms]
+           :or   {public true, private false, level 0,
+                  transforms [identity]}}]]
   (assert (not (every? false? [public private]))
           (format "At least one of :public or :private must be true in definition for %s."
                   subscribe))
@@ -73,10 +74,7 @@
                  (~pfn ~(conj tags subscribe) '~ns-sym)
                  (doseq [s# ~sinks]
                    (p/subscribe #{~subscribe} s#
-                                :transform ~(if suppress-results?
-                                              `(fn [state#]
-                                                 (dissoc state# :value))
-                                              `identity))))
+                                :transform #(-> % ~@transforms))))
      :unprobe `(do
                  (~upfn '~ns-sym)
                  (doseq [s# ~sinks]
